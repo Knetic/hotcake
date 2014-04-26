@@ -33,9 +33,9 @@ if(typeof(Hotcake) === "undefined")
 		
 			if(!to || !from)
 				return;
-			
+
 			fkeys = Object.keys(from);
-		
+
 			for(var i = 0; i < fkeys.length; i++)
 			{
 				key = fkeys[i];
@@ -127,6 +127,12 @@ if(typeof(Hotcake) === "undefined")
 		{
 			var Surrogate;			
 		
+			if (self)
+			{
+			    copyKeys(self.prototype, members);
+			    return self;
+			}
+            
 			Surrogate = function(options)
 			{
 				if(this.ctor)
@@ -135,10 +141,7 @@ if(typeof(Hotcake) === "undefined")
 
 			if(members)
 				copyKeys(Surrogate.prototype, members);
-	
-			if(self)
-				delegateKeys(self.prototype, Surrogate.prototype);
-		
+			
 			return Surrogate;
 		};
 
