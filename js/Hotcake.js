@@ -41,7 +41,6 @@ if(typeof(Hotcake) === "undefined")
 		        {
 		            if (this[key]._hotcakeReplacement)
 		            {
-		                console.log("replacement delegate");
 		                while (this[key]._hotcakeReplacement)
 		                    this[key] = this[key]._hotcakeReplacement;
 
