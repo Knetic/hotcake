@@ -4,7 +4,7 @@ if(typeof(Hotcake) === "undefined")
 {
 	Hotcake = (function()
 	{
-		var copyKeys, delegateKeys, protoDelegateKeys, isRelativeScript, evaluateHotload, resumeJQueryReady, suspendJQueryReady, synchronousHotload;
+	    var copyKeys, delegateKeys, delegateKeysSkip, protoDelegateKeys, isRelativeScript, evaluateHotload, resumeJQueryReady, suspendJQueryReady, synchronousHotload;
 		var readyFunction;
 
 		Hotcake = new Object();
@@ -21,7 +21,51 @@ if(typeof(Hotcake) === "undefined")
 			}
 		};
 
-		delegateKeys = function (to, from)
+	    /**
+            Wraps all functions in the given [target] with delegate replacements.
+            If any of these 
+        */
+		delegateKeys = function (target)
+		{
+		    var fkeys, key, replacement;
+
+		    fkeys = Object.keys(target);
+		    for (var i = 0; i < fkeys.length; i++)
+		    {
+		        key = fkeys[i];
+		        replacement = target[key];
+
+		        target[key] = function ()
+		        {
+		            if (this[key]._hotcakeReplacement)
+		            {
+		                console.log("replacement delegate");
+		                while (this[key]._hotcakeReplacement)
+		                    this[key] = this[key]._hotcakeReplacement;
+
+		                this[key].apply(this, arguments);
+		            }
+		            else
+		                replacement.apply(this, arguments);
+		        }
+		    }
+		};
+
+		delegateKeysReplace = function (to, from)
+		{
+		    var fkeys, key;
+
+		    fkeys = Object.keys(from);
+		    for (var i = 0; i < fkeys.length; i++)
+		    {
+		        key = fkeys[i];
+		        to[key]._hotcakeReplacement = from[key];
+		    }
+		};
+
+	    // original implementation for "extendClass", this made a giant linked list of function calls
+        // which chained together to form the correct behavior.
+		/*delegateKeys = function (to, from)
 		{
 		    var fkeys, key;
 
@@ -34,7 +78,7 @@ if(typeof(Hotcake) === "undefined")
 		            from[key].apply(this, arguments);
 		        }
 		    }
-		};
+		};*/
 
 		protoDelegateKeys = function (to, from)
 		{
@@ -153,45 +197,44 @@ if(typeof(Hotcake) === "undefined")
 
 		    HotcakeSurrogate = function ()
 		    {
-		        if (this.ctor && typeof (this.ctor) === "function")
-		            this.ctor.apply(this, arguments);
-
 		        if (typeof (members) === "function")
 		            members.apply(this, arguments);
+		        if (this.ctor && typeof (this.ctor) === "function")
+		            this.ctor.apply(this, arguments);
 		    }
 
 		    if (members)
-		    {
 		        copyKeys(HotcakeSurrogate.prototype, members);
 
-		        if (self)
-		            delegateKeys(self.prototype, HotcakeSurrogate.prototype);
-		    }
+		    delegateKeys(HotcakeSurrogate.prototype);
+
+		    if (self)
+		        delegateKeysReplace(self.prototype, HotcakeSurrogate.prototype);
 		    return HotcakeSurrogate;
 		};
 
-		Hotcake.extendProto = function (self, members)
+	    // No-longer-needed implementation of "extendProto", which used the hidden __proto__ property
+	    // of instantiated hotswapped classes in order to update their references.
+        // Functionally replaced by "extendClass", with the use of "delegateKeys" and "delegateKeysReplace".
+		/*Hotcake.extendProto = function (self, members)
 		{
 		    var HotcakeSurrogate;
 
 		    HotcakeSurrogate = function ()
 		    {
-		        if (this.ctor && typeof (this.ctor) === "function")
-		            this.ctor.apply(this, arguments);
-
 		        if (typeof (members) === "function")
 		            members.apply(this, arguments);
+		        if (this.ctor && typeof (this.ctor) === "function")
+		            this.ctor.apply(this, arguments);
 		    }
 
 		    if (members)
-		    {
 		        copyKeys(HotcakeSurrogate.prototype, members);
 
-		        if (self)
-		            protoDelegateKeys(self.prototype, HotcakeSurrogate.prototype);
-		    }
+		    if (self)
+		        protoDelegateKeys(self.prototype, HotcakeSurrogate.prototype);
 		    return HotcakeSurrogate;
-		};
+		};*/
 
 		/**
 			Searches for any scripts defined on the head of the page, whose source paths are relative.
