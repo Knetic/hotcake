@@ -4,7 +4,7 @@ if(typeof(Hotcake) === "undefined")
 {
 	Hotcake = (function()
 	{
-		var copyKeys, delegateKeys, isRelativeScript, evaluateHotload, resumeJQueryReady, suspendJQueryReady, synchronousHotload;
+		var copyKeys, delegateKeys, protoDelegateKeys, isRelativeScript, evaluateHotload, resumeJQueryReady, suspendJQueryReady, synchronousHotload;
 		var readyFunction;
 
 		Hotcake = new Object();
@@ -13,44 +13,46 @@ if(typeof(Hotcake) === "undefined")
 		{
 			var fkeys, key;
 		
-			if(!to || !from)
-				return;
-			
 			fkeys = Object.keys(from);
-		
 			for(var i = 0; i < fkeys.length; i++)
 			{
 				key = fkeys[i];
 				to[key] = from[key];
 			}
-		
-			return to;
 		};
 
-		delegateKeys = function(to, from)
+		delegateKeys = function (to, from)
 		{
-			var fkeys, key;
-		
-			if(!to || !from)
-				return;
+		    var fkeys, key;
 
-			fkeys = Object.keys(from);
-
-			for(var i = 0; i < fkeys.length; i++)
-			{
-				key = fkeys[i];
-
-				if(typeof(from[key]) === "function")
-				{
-					to[key] = function()
-					{
-						this.__proto__ = from;
-						from[key].apply(this, arguments);
-					}					
-				}
-			}
+		    fkeys = Object.keys(from);
+		    for (var i = 0; i < fkeys.length; i++)
+		    {
+		        key = fkeys[i];
+		        to[key] = function()
+		        {
+		            from[key].apply(this, arguments);
+		        }
+		    }
 		};
 
+		protoDelegateKeys = function (to, from)
+		{
+		    var fkeys, key;
+
+		    fkeys = Object.keys(from);
+		    for (var i = 0; i < fkeys.length; i++)
+		    {
+		        key = fkeys[i];
+		        to[key] = function ()
+		        {
+		            this.__proto__ = from;
+		            delete this[key];
+		            from[key].apply(this, arguments);                    
+		        }
+		    }
+		};
+        
 		/**
 			Returns true if this script is a relatively-pathed script.
 			False if it comes from another domain.
@@ -125,46 +127,98 @@ if(typeof(Hotcake) === "undefined")
 		*/
 		Hotcake.extend = function(self, members)
 		{
-			var Surrogate;			
+		    var HotcakeSurrogate;
 		
 			if (self)
 			{
-			    copyKeys(self.prototype, members);
+                if(members)
+			        copyKeys(self.prototype, members);
 			    return self;
 			}
             
-			Surrogate = function(options)
+			HotcakeSurrogate = function ()
 			{
-				if(this.ctor)
-					this.ctor(options);
+				if(this.ctor && typeof(this.ctor) === "function")
+					this.ctor.apply(this, arguments);
 			}
 
-			if(members)
-				copyKeys(Surrogate.prototype, members);
-			
-			return Surrogate;
+            if(members)
+			    copyKeys(HotcakeSurrogate.prototype, members);
+			return HotcakeSurrogate;
+		};
+
+		Hotcake.extendClass = function (self, members)
+		{
+		    var HotcakeSurrogate;
+
+		    HotcakeSurrogate = function ()
+		    {
+		        if (this.ctor && typeof (this.ctor) === "function")
+		            this.ctor.apply(this, arguments);
+
+		        if (typeof (members) === "function")
+		            members.apply(this, arguments);
+		    }
+
+		    if (members)
+		    {
+		        copyKeys(HotcakeSurrogate.prototype, members);
+
+		        if (self)
+		            delegateKeys(self.prototype, HotcakeSurrogate.prototype);
+		    }
+		    return HotcakeSurrogate;
+		};
+
+		Hotcake.extendProto = function (self, members)
+		{
+		    var HotcakeSurrogate;
+
+		    HotcakeSurrogate = function ()
+		    {
+		        if (this.ctor && typeof (this.ctor) === "function")
+		            this.ctor.apply(this, arguments);
+
+		        if (typeof (members) === "function")
+		            members.apply(this, arguments);
+		    }
+
+		    if (members)
+		    {
+		        copyKeys(HotcakeSurrogate.prototype, members);
+
+		        if (self)
+		            protoDelegateKeys(self.prototype, HotcakeSurrogate.prototype);
+		    }
+		    return HotcakeSurrogate;
 		};
 
 		/**
 			Searches for any scripts defined on the head of the page, whose source paths are relative.
 			Requests and reloads each of those scripts.
-			If [filterArray] is specified, any scripts matching the names given in [filterArray] will NOT be hotloaded.
-			This is useful to prevent repeat requests of library files with include guards, like jQuery or MooTools.
 		*/
-		Hotcake.hotswap = function(filterArray)
+		Hotcake.hotswap = function(options)
 		{
 			var scripts, script, src;
 
 			scripts = document.getElementsByTagName("script");
+
+			if(!options)
+			    options = new Object();
+
+			// If [filterArray] is specified, any scripts matching the names given in [filterArray] will NOT be hotloaded.
+			// This is useful to prevent repeat requests of library files with include guards, like jQuery or MooTools.
+			if (!options.filterArray)
+			    options.filterArray = new Array();
 
 			for(var i = 0; i < scripts.length; i++)
 			{
 				script = scripts[i];
 				src = script.attributes["src"];
 
-				if(src && src.value && isRelativeScript(src.value) && !isIgnoredScript(filterArray, src.value))
+				if(src && src.value && isRelativeScript(src.value) && !isIgnoredScript(options.filterArray, src.value))
 					synchronousHotload(src.value);
-			}				
+			}
 		}
 
 		return Hotcake;
