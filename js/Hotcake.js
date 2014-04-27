@@ -4,10 +4,12 @@ if(typeof(Hotcake) === "undefined")
 {
 	Hotcake = (function()
 	{
-	    var copyKeys, delegateKeys, delegateKeysSkip, protoDelegateKeys, isRelativeScript, evaluateHotload, resumeJQueryReady, suspendJQueryReady, synchronousHotload;
-		var readyFunction;
+	    var copyKeys, delegateKeys, delegateKeysSkip, isRelativeScript, pushScriptHotload, evaluateHotload, resumeJQueryReady, suspendJQueryReady, hotloadScript;
+	    var readyFunction;
+	    var loadedScripts, respondedScripts, totalScripts;
 
-		Hotcake = new Object();
+	    Hotcake = new Object();
+	    loadedScripts = new Array();
 
 		copyKeys = function(to, from)
 		{
@@ -130,25 +132,63 @@ if(typeof(Hotcake) === "undefined")
 			return false;
 		};
 
-		evaluateHotload = function(response)
+	    /**
+            Evaluates all scripts in the "loadedScripts" array.
+        */
+		evaluateHotload = function()
 		{
-			suspendJQueryReady();
-			eval.call(window, response.target.responseText);
+		    suspendJQueryReady();
+
+		    for (var i = 0; i < loadedScripts.length; i++)
+		        eval.call(window, loadedScripts[i]);
+
 			resumeJQueryReady();
+		};
+
+	    /**
+            When a script is finished 
+        */
+		pushScriptHotload = function (response)
+		{
+		    respondedScripts++;
+
+            if(response.target.responseText)
+		        loadedScripts.push(response.target.responseText);
+
+		    if (respondedScripts == totalScripts)
+		        evaluateHotload();
 		};
 
 		/**
 			Forms and sends an XMLHTTPRequest which pulls the given [url], then evaluates it as a script file.
 		*/
-		synchronousHotload = function(url)
+		hotloadScript = function(url, async)
 		{
 			var request;
 
-			request = new XMLHttpRequest();
+            // clear any straggling scripts
+			loadedScripts.splice(0);
+			respondedScripts = 0;
 
-			request.onload = evaluateHotload;
-			request.open("GET", url, true);
-			request.send();
+            // if this is not asynchronous, immediately evaluate any scripts.
+			if (!async)
+			    totalScripts = 1;
+			else
+			    totalScripts++;
+
+			request = new XMLHttpRequest();
+			request.onload = pushScriptHotload;
+			request.open("GET", url, async);
+
+            // try to send the request. If it errors or fails, do not interrupt our execution.
+		    try
+		    {
+		        request.send();
+		    }
+		    catch (exception)
+		    {
+		        console.error(exception);
+		    }
 		};
 
 		noop = function()
@@ -167,7 +207,7 @@ if(typeof(Hotcake) === "undefined")
 		
 		/**
 			Given a reference to the potential class to be extended [self], and the list of [members] to be added,
-			returns an up-to-date definition of the class. Any old instances of the class will also use the new definition.
+			returns a class definition. If [self] exists, the up to date definitions will be copied to [self], instead of a new class being created.
 		*/
 		Hotcake.extend = function(self, members)
 		{
@@ -239,6 +279,11 @@ if(typeof(Hotcake) === "undefined")
 		/**
 			Searches for any scripts defined on the head of the page, whose source paths are relative.
 			Requests and reloads each of those scripts.
+
+            If "filterArray" is specified as an Array, any script whose name matches a value inside that array will not be hotloaded.
+            If "loadForeign" is truthy, then non-relative scripts will be loaded. Generally, non-relative scripts are things like CloudFlare-hosted libraries that you
+                            don't want to load anyway.
+            If "include" is specified as an Array, this will also attempt to load all scripts named inside the array.
 		*/
 		Hotcake.hotswap = function(options)
 		{
@@ -254,14 +299,21 @@ if(typeof(Hotcake) === "undefined")
 			if (!options.filterArray)
 			    options.filterArray = new Array();
 
+            // reset total number of requested scripts.
+			totalScripts = 0;
+
 			for(var i = 0; i < scripts.length; i++)
 			{
 				script = scripts[i];
 				src = script.attributes["src"];
 
-				if(src && src.value && isRelativeScript(src.value) && !isIgnoredScript(options.filterArray, src.value))
-					synchronousHotload(src.value);
+				if(src && src.value && (options.loadForeign || (options.loadForeign || isRelativeScript(src.value))) && !isIgnoredScript(options.filterArray, src.value))
+					hotloadScript(src.value, options.async);
 			}
+
+            if(options.include && options.include.length && options.include.length > 0)
+                for(var i = 0; i < options.include.length; i++)
+                    hotloadScript(options.include[i], options.async);
 		}
 
 		return Hotcake;
