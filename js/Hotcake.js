@@ -157,7 +157,10 @@ if(typeof(Hotcake) === "undefined")
 
 		    // load any stylesheets.
 		    if (options.loadStyles)
-		        Hotcake.hotswapStyles();
+		        Hotcake.hotswapStyles
+                ({
+                    include: options.includeStyles
+                });
 		}
 
 		/**
@@ -273,41 +276,48 @@ if(typeof(Hotcake) === "undefined")
 	    /**
             Runs through all stylesheets and reloads them, replacing any existing stylesheets.
         */
-		Hotcake.hotswapStyles = function ()
+		Hotcake.hotswapStyles = function (options)
 		{
-		    var style, href;
-		    var head, link;
-
-		    head = document.getElementsByTagName("head")[0];
+		    var style;
 
 		    for (var i = 0; i < document.styleSheets.length; i++)
 		    {
                 // load new style
 		        style = document.styleSheets[i];
-		        href = style.href;
+		        hotswapStyle(style.href, style.ownerNode);
+		    }
+		};
 
-		        link = document.createElement("link");
-		        link.setAttribute("rel", "stylesheet");
-		        link.setAttribute("href", href);
-		        head.appendChild(link);
+		hotswapStyle = function (href, ownerNode)
+		{
+		    var head, link;
 
+		    head = document.getElementsByTagName("head")[0];
+
+		    link = document.createElement("link");
+		    link.setAttribute("rel", "stylesheet");
+		    link.setAttribute("href", href);
+		    head.appendChild(link);
+
+		    if (ownerNode)
+		    {
 		        // make an identical AJAX request to the server. When that requests finishes, remove the original stylesheet declaration.
 		        request = new XMLHttpRequest();
 		        request.onload = function ()
 		        {
-		            style.ownerNode.remove();
+		            ownerNode.remove();
 		        }
 		        request.open("GET", href, true);
 
 		        // try to send the request. If it errors or fails, do not interrupt our execution.
-                try
-                {
-                    request.send();
-                }
-                catch (exception)
-                {}
+		        try
+		        {
+		            request.send();
+		        }
+		        catch (exception)
+		        { }
 		    }
-		};
+		}
 
 		return Hotcake;
 	})();
