@@ -2,9 +2,11 @@
 
 ###I know how JS works internally, so tell me - how does Hotcake work?
 
-Hotcake takes a definition of a class (as an object, similar to how Backbone does), plus a parameter to the current class object. If the current class isn't yet defined, Hotcake creates a definition for it, and returns. If there is already a current definition for the class, Hotcake edits its prototype to match the new definition. If you need to edit the constructor of a class, Hotcake also has a method which allows for optimistic class definition recursion.
+Hotcake takes a definition of a class (as an object, similar to how Backbone does), plus a parameter to the current class object. If the current class isn't yet defined, Hotcake creates a definition for it, and returns that. If there is already a definition for the class, Hotcake edits its prototype to match the new definition. If you need to edit the constructor of a class, Hotcake also has a method which allows for old versions of class prototypes to "chain" together, like a singly linked list, and have every object use the most recent protoype - plus any new object use the most recent version of the constructor.
 
 ###That was over my head, walk me through it
+
+Before we get into how Hotcake works, you ought to have some knowledge about how class prototypes work in JS. Ideally, you'll already have done class inheritance "by hand" (without using Backbone or something like it), and have a cursory understanding of what processes JS goes through when trying to call a function. If you don't know about that, I think you're brave and I like your style.
 
 Let's take the following code, it's emblematic of how Hotcake operates.
     
@@ -30,7 +32,7 @@ Let's take the following code, it's emblematic of how Hotcake operates.
     
     obj.foo(); // should echo "version 2" to console.
     
-In this example, we define a class, create an instance of it, and use a function. But note that by editing the function in the class prototype ("Test1.prototype.foo"), it also changes the behavior of the instantiated object.
+In this example, we define a class, create an instance of it, and use one of its functions. But note that by editing the function in the class prototype ("Test1.prototype.foo"), it also changes the behavior of the instantiated object.
 
 This is because objects instantiated from a class don't possess copies of that class's functions, they instead call their class prototype's functions. So internally, you might think of an object's "foo" method like this:
 
@@ -44,7 +46,7 @@ This is because objects instantiated from a class don't possess copies of that c
 
 This is done for a multitude of reasons, not the least of which is to preserve memory. In JS, every function that is defined has a memory cost (you have to store it like any other object). If we have big functions copied to every instantiated object, we're wasting memory. Instead, JS point to *one* function definition, via the prototype.
 
-This behavior makes it very easy for libraries like Hotcake to step in and edit that prototype, causing any already-instantiated objects to instantly modify their behavior to use the new code.
+This behavior makes it very easy for libraries like Hotcake to step in and edit that prototype, causing any already-instantiated objects to instantly modify their behavior to use the new code - commonly known as hotloading.
 
 ###Is that all Hotcake does?
 
@@ -55,7 +57,7 @@ No. There's a catch. In our example above, if we wanted to change the constructo
         this.things = new Array();
         this.stuff = 5;
     }
-We wouldn't be able to. We have to define *a new class* to get a new constructor. This unfortunate situation is one of many reasons not to do too much work in the constructor of a class - something you probably found while writing in other languages too.
+We wouldn't be able to. We have to define *an entirely new class* to get a new constructor. This unfortunate situation is one of many reasons not to do too much work in the constructor of a class - something you probably found while writing in other languages too.
 
 Hotcake's "extend" method does not try to change the constructor, it just edits the prototype. If your code avoids constructors, you can safely use "extend" to hotswap new code. This is the "recommended" mode, because it has absolute certainty that hotswapping will work without any ill effect. But if you want to have any logic in the constructor of your class, it also requires you to write either a "ctor" or  "initialize" function in the definition of your class, like this.
 
@@ -72,11 +74,11 @@ Hotcake's "extend" method does not try to change the constructor, it just edits 
 
 ###I want to hotswap my constructor, can I use Hotcake?
 
-Yes. But before you try to do that, please understand that trying to hotswap constructors leads to very ugly solutions. **You are much better off using "extend" and "ctor" than trying to hotswap actual constructors**. 
+Yes. But before you try to do that, please understand that trying to hotswap constructors leads to moderately ugly solutions. **You are much better off using "extend" and "ctor" than trying to hotswap actual constructors**. 
 
 **Seriously.** If you're writing new code, or able to refactor your current codebase, use "extend" and "ctor".
 
-But if you really, really, really need to; Hotcake also has an "extendClass" function which is more advanced, but also less elegant. It works by "chaining" class definitions together with the use of surrogates. It does what it can to make sure that unused class definitions get garbage collected, and to make sure no call stack size limits are reached.
+But if you really, really, really need to; Hotcake also has an "extendClass" function which is more advanced. It works by "chaining" class definitions together with the use of surrogates.
 
 To explain how this works, let's keep using our original example, but try to edit the constructor. This means that if we want to hotswap the constructor, we need to create a new class, and point the old class prototypes to use the new class prototype.
 
@@ -87,11 +89,14 @@ To explain how this works, let's keep using our original example, but try to edi
         // create a new class, which will be returned.
         Surrogate = function()
         {
+            // call the new constructor whenever this class creates a new object.
             newClassDefinition.apply(this, arguments);
         }
         
         // copy the definition of "newClassDefinition" into the old class' prototype,
-        // and the surrogate class.
+        // and to the new surrogate class.
+        // this way, anything using the old class' methods will be updated to
+        // use the new methods, just like with "extend".
         fkeys = Object.keys(originalClass.prototype);
         for(var i = 0; i < fkeys.length; i++)
         {
@@ -100,6 +105,9 @@ To explain how this works, let's keep using our original example, but try to edi
             originalClass.prototype[key] = newClassDefinition[key];
         }
         
+        // this overwrites our reference to the original class - we can never reach
+        // it again. In our example above, the original Test1 is now gone, and Test1
+        // refers to this surrogate class.
         return Surrogate;
     }
     
@@ -162,9 +170,8 @@ Doing this is a relatively quick change to the "extendClass" function to look li
             
             originalClass.prototype[key] = function()
             {
-                // override our usage of this function to instead
-                // call the new definition.
-                // If the new definition is replaced by another definition,
+                // override this function to instead call the new definition.
+                // If the new class' definition is replaced by another definition,
                 // this function will walk through all the different versions
                 // until it arrives at the most recent one, with the actual code.
                 newClassDefinition[key].apply(this, arguments);
@@ -176,66 +183,50 @@ Doing this is a relatively quick change to the "extendClass" function to look li
     
 Now, no matter how many versions of "foo" we edit in our example, our "obj" will always use the most up-to-date version.
 
-###Won't using functions this way cause problems?
+Unfortunately, we've now introduced a potentially fatal mistake. We've made it so that any call to a class' function will walk through an unknown number of anonymous functions, each getting us one step closer to the actual logic we want to use. We've made a very roundabout form of a singly-linked list, and anytime we call a class function, we end up recursing through the whole thing. This means that if we hotswap a few thousand times, then call one of our class functions, we will hit the call stack size limit, and all of our code will fail.
 
-Yes, it absolutely will. If you use "extendClass" more than a few thousand times, you'll hit the call stack limit of your browser (not to mention you'll be using functions to call other functions a few thousand times, which isn't cheap for performance).
+No problem! We're professionals. Since we can edit an old function prototype, we can just indicate that it's out of date, and give it a pointer to the next prototype in the chain - without needing to use recursion.
 
-But there is another way, which allows us to hotswap constructors *and* not incur the wicked penalties of calling so many anonymous functions in sequence. Unfortunately, there are edge cases where you'll still encounter call stack size problems, and this falls firmly in the realm of "unsupported behavior" - meaning that while major browsers support it, they're under no obligation to do so, and using that behavior can be unpredictable. We're going to use the \_\_proto\_\_ object (this is what Hotcake's "extendProto" does).
-
-    function extendClass = function(originalClass, newClassDefinition)
+    /* create Surrogate just like before */
+    for(var i = 0; i < fkeys.length; i++)
     {
-        /* create Surrogate just like before */
-        
-        fkeys = Object.keys(originalClass.prototype);
-        for(var i = 0; i < fkeys.length; i++)
+        // bear in mind, this protoype is the most recent code - it's not old yet,
+        // it's just preparing itself for what happens when it becomes outdated.
+        Surrogate.prototype[key] = function ()
         {
-            key = fkeys[i];
-            Surrogate.prototype[key] = newClassDefinition[key];
-            
-            originalClass.prototype[key] = function()
+            // if this function has a member indicating that 
+            // our definition is out of date, and ought to be
+            // replaced ("_replacement")
+            if (this[key]._replacement)
             {
-                // replace our current prototype with the Surrogate's.
-                // any object using any of its functions will now
-                // automatically update its prototype to point
-                // to the most recent loaded prototype.
-                this.__proto__ = Surrogate.prototype;
+                // then traverse through the list of functions until
+                // we find the most recent one, and use that in this object.
+                while (this[key]._replacement)
+                    this[key] = this[key]._replacement;
                 
-                newClassDefinition[key].apply(this, arguments);
+                // and finally call the updated function.
+                this[key].apply(this, arguments);
             }
+            // otherwise, if this is the most updated function,
+            // just call it.
+            else
+                newClassDefinition[key].apply(this, arguments);
         }
         
-        return Surrogate;
+        // this is the old code, which we want to replace.
+        // we just link the most recentversion of the function,
+        // and let the original function pick it up whenever the old function is called
+        originalClass.prototype[key]._replacement = newClassDefinition;
     }
 
-This technique allows us to keep every object's prototype pointing at the most recent definition of its class, meaning a call to "foo" will only need to walk through every version of the "Test" class before executing *once*, not every time it executes.
+This solves all of our problems - it allows us to use whatever constructors we want, ensures that all objects use the most up-to-date function definitions, and is low-impact. This solution is how Hotcake implements "extendClass".
 
-That definitely seems to fix our problems. But there is still an edge case which can cause us to hit the call stack limit; If we create an object, then leave it completely alone for a few thousand iterations of hotswapping, then it will hit the call stack limit once we finally *do* try to use it. See the example below:
+###If i can use "extendClass", why should i limit myself to "extend"?
 
-    var obj;
-    
-    obj = new Test();
-    
-    // pretend that this loop represents one million hotswap iterations.
-    for(var i = 0; i < 1000000000; i++)
-    {
-        Test = Hotcake.extendProto(Test,
-        {
-            foo: function()
-            {
-                console.log("version " + i);
-            }
-        });
-    }
-    
-    // will probably hit the call stack limit, since it needs to walk through
-    // the definition for "foo" of one million different versions of "Test".
-    obj.foo();
-    
-In the above example, you will probably hit the call stack limit. If your browser supports more than a million call stack entries, you may not hit the limit. But hopefully you can see the danger of doing this; you're now playing a "numbers game" with your call stack limit, and hoping that every object that you create has *some method* called from it before you update your class definition too many times.
+"extendClass" is a very sideways solution. It involves creating a lot of classes, and holding references between their prototypes. Remember, once you instantiate an object, the class you use to instantiate it will stick around in memory until (at least) the object is deleted. If you create and hold a lot of objects, but don't destroy them after you're done with the, you can wind up with memory leaks. That sort of scenario isn't possible with "extend".
 
-This is a **very dangerous game**. Not only would you be relying on unsupported behavior (\_\_proto\_\_), but you're also trusting that every single one of your objects will not lie dormant for too long as to cause a stack size breach. It may sound ludicrous that you'd go through ten thousand versions of code without touching an object, but would you bet your career on it?
+###How does Hotcake hotswap stylesheets?
 
-###If "extendClass" and "extendProto" are so dangerous, why include them?
+In contrast to the lengths Hotcake goes through to replace code, stylesheets are dead simple. Browsers entirely rely on the "link" elements found within the "head" of the DOM. If you remove any of those "link" elements, its style rules are automatically removed from the page.
 
-Hotcake was designed to offer a full array of hotswapping options. Not everyone is working on brand new code which can be structured to accomodate Hotcake, so Hotcake supports a few other ways to do hotswapping for existing codebases.
-
+This makes it trivial to go through every "link" element, delete the element, and recreate the element exactly as it was. This causes the browser to re-request the same stylesheet, and to replace all styles in the page with the updated versions.
