@@ -5,8 +5,10 @@ if(typeof(Hotcake) === "undefined")
 	Hotcake = (function()
 	{
 	    var copyKeys, delegateKeys, delegateKeysSkip, isRelativeScript, pushScriptHotload, evaluateHotload, resumeJQueryReady, suspendJQueryReady, hotloadScript;
+	    var hotswapStyles, hotswapStyle;
 	    var readyFunction;
 	    var loadedScripts, respondedScripts, totalScripts;
+	    var onswapped, hotswapping;
 
 	    Hotcake = new Object();
 	    loadedScripts = new Array();
@@ -119,16 +121,27 @@ if(typeof(Hotcake) === "undefined")
             If "loadForeign" is truthy, then non-relative scripts will be loaded. Generally, non-relative scripts are things like CloudFlare-hosted libraries that you
                             don't want to load anyway.
             If "include" is specified as an Array, this will also attempt to load all scripts named inside the array.
+            If "loadStyles" is truthy, a call to "Hotcake.hotswapStyles" will also be made.
             If "onswapped" is defined as a function, it will be called after all the scripts have been hotloaded.
 		*/
 		Hotcake.hotswap = function (options)
 		{
 		    var scripts, script, src;
+		    var toLoad;
 
+		    if (hotswapping)
+		    {
+		        console.error("Hotcake can only perform one hotswap at a time.");
+		        return;
+		    }
+
+		    hotswapping = true;
 		    scripts = document.getElementsByTagName("script");
 
 		    if (!options)
 		        options = new Object();
+
+		    onswapped = options.onswapped;
 
 		    if(typeof(options.loadStyles) === "undefined")
 		        options.loadStyles = true;
@@ -139,7 +152,7 @@ if(typeof(Hotcake) === "undefined")
 		        options.filterArray = new Array();
 
 		    // reset total number of requested scripts.
-		    totalScripts = 0;
+		    toLoad = new Array();
 
 		    for (var i = 0; i < scripts.length; i++)
 		    {
@@ -147,13 +160,20 @@ if(typeof(Hotcake) === "undefined")
 		        src = script.attributes["src"];
 
 		        if (src && src.value && (options.loadForeign || (options.loadForeign || isRelativeScript(src.value))) && !isIgnoredScript(options.filterArray, src.value))
-		            hotloadScript(src.value, options.async);
+		            toLoad.push(src.value);
 		    }
 
             // deal with any includes
 		    if (options.include && options.include.length && options.include.length > 0)
 		        for (var i = 0; i < options.include.length; i++)
-		            hotloadScript(options.include[i], options.async);
+		            toLoad.push(options.include[i]);
+
+		    totalScripts = toLoad.length;
+		    loadedScripts.splice(0);
+		    respondedScripts = 0;
+
+		    for(var i = 0; i < toLoad.length; i++)
+		        hotloadScript(toLoad[i], options.async);
 
 		    // load any stylesheets.
 		    if (options.loadStyles)
@@ -202,17 +222,7 @@ if(typeof(Hotcake) === "undefined")
 		hotloadScript = function (url, async)
 		{
 		    var request;
-
-		    // clear any straggling scripts
-		    loadedScripts.splice(0);
-		    respondedScripts = 0;
-
-		    // if this is not asynchronous, immediately evaluate any scripts.
-		    if (!async)
-		        totalScripts = 1;
-		    else
-		        totalScripts++;
-
+            
 		    request = new XMLHttpRequest();
 		    request.onload = pushScriptHotload;
 		    request.open("GET", url, async);
@@ -247,12 +257,22 @@ if(typeof(Hotcake) === "undefined")
         */
 		evaluateHotload = function()
 		{
-		    suspendJQueryReady();
-
 		    for (var i = 0; i < loadedScripts.length; i++)
-		        eval.call(window, loadedScripts[i]);
+		        try
+		        {
+		            suspendJQueryReady();
+		            eval.call(window, loadedScripts[i]);
+		        }
+                catch (exception)
+		        {
+		            console.error(exception);
+		        }
 
-			resumeJQueryReady();
+		    resumeJQueryReady();
+
+		    hotswapping = false;
+		    if (onswapped && typeof(onswapped) === "function")
+		        onswapped();
 		};
 
 		noop = function()
@@ -264,8 +284,11 @@ if(typeof(Hotcake) === "undefined")
         */
 		suspendJQueryReady = function()
 		{
-			readyFunction = $.prototype.ready;
-			$.prototype.ready = $.ready = noop;
+		    if ($.prototype.ready !== noop)
+		    {
+		        readyFunction = $.prototype.ready;
+		        $.prototype.ready = $.ready = noop;
+		    }
 		};
 
 		resumeJQueryReady = function()
