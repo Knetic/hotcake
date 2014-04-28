@@ -9,9 +9,11 @@ if(typeof(Hotcake) === "undefined")
 	    var readyFunction;
 	    var loadedScripts, respondedScripts, totalScripts;
 	    var onswapped, hotswapping;
+	    var handlebarsCache;
 
 	    Hotcake = new Object();
 	    loadedScripts = new Array();
+	    var handlebarsCache = new Object();
 
 		copyKeys = function(to, from)
 		{
@@ -339,6 +341,64 @@ if(typeof(Hotcake) === "undefined")
 		        }
 		        catch (exception)
 		        { }
+		    }
+		}
+
+	    // What follows is not required for Hotcake to function.
+	    // The "Handlebars" integration is a reference implementation for how one *might* go about hotloading HTML fragments.
+
+	    /**
+            Returns a compiled Handlebars template for the given name.
+            If the template has not yet been loaded, this makes a synchronous request for it, compiles it, and caches the result.
+            Any subsequent calls to this function with the same template name will return the same compiled template (without making more requests).
+        */
+		Hotcake.getHandlebarsTemplate = function(templateName, async)
+		{
+		    var compiledTemplate, responseText;
+
+		    if (handlebarsCache[templateName])
+		        return handlebarsCache[templateName];
+
+		    request = new XMLHttpRequest();
+		    request.onload = function (response)
+		    {
+		        responseText = response.target.responseText;
+		        if (responseText)
+		        {
+		            compiledTemplate = Handlebars.compile(responseText);
+		            handlebarsCache[templateName] = compiledTemplate;
+		        }
+		    };
+		    request.open("GET", templateName, async);
+
+		    // try to send the request. If it errors or fails, do not interrupt our execution.
+		    try
+		    {
+		        request.send();
+		    }
+		    catch (exception)
+		    {
+		        console.error(exception);
+		    }
+		    return compiledTemplate;
+		}
+
+	    /**
+            Reloads any templates that are currently loaded.
+            If "async" is specified as truthy, this will perform an asynchronous hotload. The default behavior is to synchronously load.
+        */
+		Hotcake.hotloadHandlebarsTemplates = function (options)
+		{
+		    var templateNames, request;
+		    var name;
+
+		    templateNames = Object.keys(handlebarsCache);
+            
+		    for (var i = 0; i < templateNames.length; i++)
+		    {
+		        name = templateNames[i];
+		        handlebarsCache[name] = null;
+		        getHandlebarsTemplate(name, (options && options.async));
 		    }
 		}
 
