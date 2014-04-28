@@ -110,40 +110,6 @@ if(typeof(Hotcake) === "undefined")
 		        to[key]._hotcakeReplacement = from[key];
 		    }
 		};
-
-	    // original implementation for "extendClass", this made a giant linked list of function calls
-        // which chained together to form the correct behavior.
-		/*delegateKeys = function (to, from)
-		{
-		    var fkeys, key;
-
-		    fkeys = Object.keys(from);
-		    for (var i = 0; i < fkeys.length; i++)
-		    {
-		        key = fkeys[i];
-		        to[key] = function()
-		        {
-		            from[key].apply(this, arguments);
-		        }
-		    }
-		};
-
-		protoDelegateKeys = function (to, from)
-		{
-		    var fkeys, key;
-
-		    fkeys = Object.keys(from);
-		    for (var i = 0; i < fkeys.length; i++)
-		    {
-		        key = fkeys[i];
-		        to[key] = function ()
-		        {
-		            this.__proto__ = from;
-		            delete this[key];
-		            from[key].apply(this, arguments);                    
-		        }
-		    }
-		};*/
         
 	    /**
 			Searches for any scripts defined on the head of the page, whose source paths are relative.
@@ -153,6 +119,7 @@ if(typeof(Hotcake) === "undefined")
             If "loadForeign" is truthy, then non-relative scripts will be loaded. Generally, non-relative scripts are things like CloudFlare-hosted libraries that you
                             don't want to load anyway.
             If "include" is specified as an Array, this will also attempt to load all scripts named inside the array.
+            If "onswapped" is defined as a function, it will be called after all the scripts have been hotloaded.
 		*/
 		Hotcake.hotswap = function (options)
 		{
@@ -162,6 +129,9 @@ if(typeof(Hotcake) === "undefined")
 
 		    if (!options)
 		        options = new Object();
+
+		    if(typeof(options.loadStyles) === "undefined")
+		        options.loadStyles = true;
 
 		    // If [filterArray] is specified, any scripts matching the names given in [filterArray] will NOT be hotloaded.
 		    // This is useful to prevent repeat requests of library files with include guards, like jQuery or MooTools.
@@ -180,9 +150,14 @@ if(typeof(Hotcake) === "undefined")
 		            hotloadScript(src.value, options.async);
 		    }
 
+            // deal with any includes
 		    if (options.include && options.include.length && options.include.length > 0)
 		        for (var i = 0; i < options.include.length; i++)
 		            hotloadScript(options.include[i], options.async);
+
+		    // load any stylesheets.
+		    if (options.loadStyles)
+		        Hotcake.hotswapStyles();
 		}
 
 		/**
@@ -293,6 +268,45 @@ if(typeof(Hotcake) === "undefined")
 		resumeJQueryReady = function()
 		{
 			$.prototype.ready = $.ready = readyFunction;
+		};
+
+	    /**
+            Runs through all stylesheets and reloads them, replacing any existing stylesheets.
+        */
+		Hotcake.hotswapStyles = function ()
+		{
+		    var style, href;
+		    var head, link;
+
+		    head = document.getElementsByTagName("head")[0];
+
+		    for (var i = 0; i < document.styleSheets.length; i++)
+		    {
+                // load new style
+		        style = document.styleSheets[i];
+		        href = style.href;
+
+		        link = document.createElement("link");
+		        link.setAttribute("rel", "stylesheet");
+		        link.setAttribute("href", href);
+		        head.appendChild(link);
+
+		        // make an identical AJAX request to the server. When that requests finishes, remove the original stylesheet declaration.
+		        request = new XMLHttpRequest();
+		        request.onload = function ()
+		        {
+		            style.ownerNode.remove();
+		        }
+		        request.open("GET", href, true);
+
+		        // try to send the request. If it errors or fails, do not interrupt our execution.
+                try
+                {
+                    request.send();
+                }
+                catch (exception)
+                {}
+		    }
 		};
 
 		return Hotcake;
