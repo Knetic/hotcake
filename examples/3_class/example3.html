@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<head>
+	<script src="../../js/Hotcake.js" type="text/javascript"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1-rc2/jquery.min.js" type="text/javascript"></script>
+	<script src="example_v1.js" type="text/javascript"></script>
+</head>
+<body>
+
+	This example finally takes advantage of what sets Hotcake apart from other hotloaders - its ability to hotload classes.
+	<br><br>The below "pulsate" button and example element are both controlled by a "view" class.
+	<br>This view class initially pulses the square rapidly green. But what if we want to change that behavior?
+	<br>The second version of the class pulsates it slowly red.
+	<br>Pressing the "hotload" button will swap the first version of the script for the second version.
+
+	<br><br>
+	<button type="button" id="hotloadButton">Hotload scripts</button>
+	<button type="button" id="pulseButton">Pulsate</button>
+<br>
+	<div id="element1" style="width: 30px; height: 30px; background-color: green;"></div>
+</body>
