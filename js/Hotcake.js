@@ -31,7 +31,14 @@ if(typeof(Hotcake) === "undefined")
 			Given a reference to the potential class to be extended [self], and the list of [members] to be added,
 			returns a class definition. If [self] exists, the up to date definitions will be copied to [self], instead of a new class being created.
 		*/
-		Hotcake.extend = function (self, members)
+		Hotcake.define = function (self, members)
+		{
+		    if (typeof (members) === "function")
+		        return defineLinkedClass(self, members);
+		    return defineSingleClass(self, members);
+		};
+        	    
+		defineSingleClass = function (self, members)
 		{
 		    var HotcakeSurrogate;
 
@@ -53,7 +60,7 @@ if(typeof(Hotcake) === "undefined")
 		    return HotcakeSurrogate;
 		};
 
-		Hotcake.extendClass = function (self, members)
+		defineLinkedClass = function (self, members)
 		{
 		    var HotcakeSurrogate;
 
@@ -88,18 +95,23 @@ if(typeof(Hotcake) === "undefined")
 		        key = fkeys[i];
 		        replacement = target[key];
 
-		        target[key] = function ()
-		        {
-		            if (this[key]._hotcakeReplacement)
-		            {
-		                while (this[key]._hotcakeReplacement)
-		                    this[key] = this[key]._hotcakeReplacement;
+		        target[key] = delegateForwardFunction(key, replacement);
+		    }
+		};
 
-		                this[key].apply(this, arguments);
-		            }
-		            else
-		                replacement.apply(this, arguments);
+		delegateForwardFunction = function (key, replacement)
+		{
+		    return function ()
+		    {
+		        if (this[key]._hotcakeReplacement)
+		        {
+		            while (this[key]._hotcakeReplacement)
+		                this[key] = this[key]._hotcakeReplacement;
+
+		            this[key].apply(this, arguments);
 		        }
+		        else
+		            replacement.apply(this, arguments);
 		    }
 		};
 
