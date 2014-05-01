@@ -27,10 +27,7 @@ CounterModel = Hotcake.define(CounterModel, Backbone.Model.extend
 	{
 		var counter;
 
-		console.log("count is " + count);
 		counter = this.get("counter");
-
-		console.log("counter is currently " + counter);
 
 		counter += count;
 		this.set("counter", counter);
@@ -41,7 +38,7 @@ CounterView = Hotcake.define(CounterView, Backbone.View.extend
 ({
 	render: function()
 	{
-		this.$el.find(".counterContainer").text(this.model.get("counter"));
+		this.$el.find(".counterContainer").text("Count: " + this.model.get("counter"));
 	},
 
 	incrementModel: function()

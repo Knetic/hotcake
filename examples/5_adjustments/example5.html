@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<head>
+	<script src="../../js/Hotcake.js" type="text/javascript"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1-rc2/jquery.min.js" type="text/javascript"></script>
+	<script src="example_v1.js" type="text/javascript"></script>
+</head>
+<body>
+
+	You may have noticed a glaring flaw with Hotcake - no model adjustment logic!
+	<br>If you make changes to the way you represent your data model between versions, your clients will be stuck using the
+	<br>old data model, while your newly hotswapped code will be using logic which depends on the new data model - that's bad.
+	<br><br>Hotcke doesn't offer an explicit solution to this, because it's more of a pattern problem than a Hotcake problem.
+	<br>However, one easy solution is to have a separate script file, that is not included in the HEAD of your document,
+	<br>which handles upgrades between versions of your code and models. In this example, it's named "upgrade.js", and it's
+	<br>included in every hotswap, as the very last script evaluated.
+	<br><br>Here, we go from a very simple model ("Apple") which contains an integer number of seeds;
+	<br>to a model where each seed is described as its own object as part of an array.
+
+	<br><br>
+	<button type="button" id="hotloadButton">Hotload scripts</button>
+	<button type="button" id="seedAddButton">Add Seed</button>
+<br>
+	<span id="element1"></span>
+</body>
