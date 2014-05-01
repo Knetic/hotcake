@@ -17,9 +17,12 @@ if(typeof(Hotcake) === "undefined")
 
 		copyKeys = function(to, from)
 		{
-			var fkeys, key;
+		    var fkeys, key;
+
+		    if (from.prototype)
+		        copyKeys(to, from.prototype);
 		
-			fkeys = Object.keys(from);
+			fkeys = Object.getOwnPropertyNames(from);
 			for(var i = 0; i < fkeys.length; i++)
 			{
 				key = fkeys[i];
@@ -31,19 +34,25 @@ if(typeof(Hotcake) === "undefined")
 			Given a reference to the potential class to be extended [self], and the list of [members] to be added,
 			returns a class definition. If [self] exists, the up to date definitions will be copied to [self], instead of a new class being created.
 		*/
-		Hotcake.define = function (self, members)
+		Hotcake.define = function (self, members, base)
 		{
 		    if (typeof (members) === "function")
-		        return defineLinkedClass(self, members);
-		    return defineSingleClass(self, members);
+		        return defineLinkedClass(self, members, base);
+		    return defineSingleClass(self, members, base);
 		};
         	    
-		defineSingleClass = function (self, members)
+		defineSingleClass = function (self, members, base)
 		{
 		    var HotcakeSurrogate;
 
 		    if (self)
 		    {
+		        if (base)
+		        {
+		            copyKeys(self.prototype, base);
+		            self.prototype._baseClass = base;
+		        }
+
 		        if (members)
 		            copyKeys(self.prototype, members);
 		        return self;
@@ -53,6 +62,15 @@ if(typeof(Hotcake) === "undefined")
 		    {
 		        if (this.ctor && typeof (this.ctor) === "function")
 		            this.ctor.apply(this, arguments);
+		        else
+		            if (base && base.ctor && typeof (base.ctor) === "function")
+		                base.ctor.apply(this, arguments);
+		    }
+
+		    if (base)
+		    {
+		        copyKeys(HotcakeSurrogate.prototype, base.prototype);
+		        HotcakeSurrogate.prototype._baseClass = base;
 		    }
 
 		    if (members)
@@ -60,21 +78,48 @@ if(typeof(Hotcake) === "undefined")
 		    return HotcakeSurrogate;
 		};
 
-		defineLinkedClass = function (self, members)
+		defineLinkedClass = function (self, members, base)
 		{
-		    var HotcakeSurrogate;
+		    var HotcakeSurrogate, backboneSuper;
 
 		    HotcakeSurrogate = function ()
 		    {
 		        if (typeof (members) === "function")
+		        {
+		            this.constructor = members.constructor;
 		            members.apply(this, arguments);
+		        }
+
 		        if (this.ctor && typeof (this.ctor) === "function")
 		            this.ctor.apply(this, arguments);
+		        else
+		            if (base && base.ctor && typeof (base.ctor) === "function")
+		                base.ctor.apply(this, arguments);
+		    }
+
+		    if (base)
+		    {
+		        copyKeys(HotcakeSurrogate.prototype, base.prototype);
+		        HotcakeSurrogate.prototype._baseClass = base;
 		    }
 
 		    if (members)
-		        copyKeys(HotcakeSurrogate.prototype, members);
+		    {
+                // if this is a class, copy it all over.
+		        if (typeof (members) === "function")
+		        {
+		            // this might be a Backbone class. If it contains __super__, copy all of that too.
+		            if (members.__super__)
+		                copyBackboneSuperKeys(HotcakeSurrogate.prototype, members.__super__);
 
+		            copyKeys(HotcakeSurrogate.prototype, members);
+		        }
+
+                // and copy any fields.
+		        copyKeys(HotcakeSurrogate.prototype, members);
+		    }
+
+            // set up key delegates so that when/if this class gets hotloaded, the new version can set this class up with replacements.
 		    delegateKeys(HotcakeSurrogate.prototype);
 
 		    if (self)
@@ -89,13 +134,14 @@ if(typeof(Hotcake) === "undefined")
 		{
 		    var fkeys, key, replacement;
 
-		    fkeys = Object.keys(target);
+		    fkeys = Object.getOwnPropertyNames(target);
 		    for (var i = 0; i < fkeys.length; i++)
 		    {
 		        key = fkeys[i];
 		        replacement = target[key];
 
-		        target[key] = delegateForwardFunction(key, replacement);
+                if(typeof(target[key]) === "function")
+		            target[key] = delegateForwardFunction(key, replacement);
 		    }
 		};
 
@@ -108,12 +154,20 @@ if(typeof(Hotcake) === "undefined")
 		            while (this[key]._hotcakeReplacement)
 		                this[key] = this[key]._hotcakeReplacement;
 
-		            this[key].apply(this, arguments);
+		            return this[key].apply(this, arguments);
 		        }
-		        else
-		            replacement.apply(this, arguments);
+		        
+		        return replacement.apply(this, arguments);
 		    }
 		};
+
+		copyBackboneSuperKeys = function (to, from)
+		{
+		    if (from.__super__)
+		        copyBackboneSuperKeys(to, from.__super__);
+
+		    copyKeys(to, from);
+		}
 
 		delegateKeysReplace = function (to, from)
 		{
@@ -123,7 +177,9 @@ if(typeof(Hotcake) === "undefined")
 		    for (var i = 0; i < fkeys.length; i++)
 		    {
 		        key = fkeys[i];
-		        to[key]._hotcakeReplacement = from[key];
+
+                if(to[key])
+		            to[key]._hotcakeReplacement = from[key];
 		    }
 		};
         
@@ -248,6 +304,7 @@ if(typeof(Hotcake) === "undefined")
 		    }
 		    catch (exception)
 		    {
+                console.error("Error while loading or evaluating script file '" + url + "':");
 		        console.error(exception);
 		    }
 		};

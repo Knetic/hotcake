@@ -6,11 +6,10 @@
 </head>
 <body>
 
-	This example finally takes advantage of what sets Hotcake apart from other hotloaders - its ability to hotload classes.
-	<br><br>The below "pulsate" button and example element are both controlled by a "view" class.
-	<br>This view class initially pulses the square rapidly green. But what if we want to change that behavior?
-	<br>The second version of the class pulsates it slowly red.
-	<br>Pressing the "hotload" button will swap the first version of the script for the second version.
+	Along with hotloading single classes, Hotcake is prepared to hotload classese that use inheritance.
+	<br><br>The below "pulsate" button and example element are both controlled by a "view" class, same as in the last example.
+	<br>However, this time the view class is <i>subclassed</i> into a SlidePulsateView, inheriting PulsateView.
+	<br>If we make changes to the SlidePulsateView, and then hotload those changes, they show up as expected.
 
 	<br><br>
 	<button type="button" id="hotloadButton">Hotload scripts</button>

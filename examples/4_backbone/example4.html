@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<head>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1-rc2/jquery.min.js" type="text/javascript"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js" type="text/javascript"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone.js" type="text/javascript"></script>
+
+	<script src="../../js/Hotcake.js" type="text/javascript"></script>
+
+	<script src="example_v1.js" type="text/javascript"></script>
+</head>
+<body>
+	Hotcake doesn't force you to use its own implementation of class inheritance and definition. Maybe you already use something like Backbone or Ember or MooTools, and are not interested in yet another class handling library.
+	<br>In that case, Hotcake is still prepared to work with your objects.
+	<br>In this example, we use a Backbone Model and View to generate a counter that can be incremented via a button.
+	<br>Once we hotload the classes again, the counter will increment by five, instead of one.
+	<br><br> Bear in mind, hotloading doesn't re-instantiate your objects. All of your views, models, and collections are completely valid before and after hotloading. You can safely keep objects around for the entire life of the web application, through any number of hotloads, and be completely safe.
+	
+	<br><br>
+	<button type="button" id="hotloadButton">Hotload scripts</button>
+<br>
+	<div id="element1">
+		<button type="button" class="incrementButton">Increment</button>
+		<br>
+		<span class="counterContainer"></span>		
+	</div>
+</body>
