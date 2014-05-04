@@ -22,7 +22,7 @@ Nobody is stopping you from hard refreshing a user's browser, but it doesn't see
 
 ###How do I use it?
 
-Hotcake can be used in a lot of ways, it's probably best if you took a look at the /examples/ folder, or went to www.hotcakejs.com/examples or www.hotcake.com/api and read the docs listed there.
+Hotcake can be used in a lot of ways, it's probably best if you took a look at the /examples/ folder, or went to www.hotcakejs.com/examples.html or www.hotcakejs.com/api.html and read the docs listed there.
 
 ###How does it work?
 
