@@ -22,12 +22,12 @@ Nobody is stopping you from hard refreshing a user's browser, but it doesn't see
 
 ###How do I use it?
 
-Hotcake can be used in a lot of ways, it's probably best if you took a look at the /examples/ folder, or went to www.hotcakejs.com and just read the docs listed there.
+Hotcake can be used in a lot of ways, it's probably best if you took a look at the /examples/ folder, or went to www.hotcakejs.com/examples or www.hotcake.com/api and read the docs listed there.
 
 ###How does it work?
 
-The full explanation of how Hotcake came about, and how it works, can be found on www.hotcakejs.com, or in the "INTERNALS.MD" file in this repository. And, I mean, it's open source. You could just look at the source.
+The full explanation of how Hotcake came about, and how it works, can be found on http://www.hotcakejs.com/internals.html .
 
 ###Can I contribute?
 
-I'm down to accept pull requests, if they're in the spirit of the project. If you have ideas, concerns, or comments about the project - email me. Seriously, do it. I don't mind emails from out of the blue - I prefer them to the spam that usually finds its way into my inbox.
+I'm down to accept pull requests, if they're in the spirit of the project. If you have ideas, concerns, or comments about the project - email me. Seriously, do it. I don't mind emails from out of the blue.
