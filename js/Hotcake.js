@@ -116,7 +116,7 @@ if(typeof(Hotcake) === "undefined")
 		        }
 
                 // and copy any fields.
-		        copyKeys(HotcakeSurrogate.prototype, members);
+		        copyKeys(HotcakeSurrogate, members);
 		    }
 
             // set up key delegates so that when/if this class gets hotloaded, the new version can set this class up with replacements.
