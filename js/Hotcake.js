@@ -293,6 +293,13 @@ if(typeof(Hotcake) === "undefined")
 		{
 		    var request;
             
+		    if (url.indexOf("?") > 0)
+		        url += "&";
+		    else
+		        url += "?";
+
+		    url += "__hotcakeGUID=" + generateGUID();
+
 		    request = new XMLHttpRequest();
 		    request.onload = pushScriptHotload;
 		    request.open("GET", url, async);
@@ -411,6 +418,17 @@ if(typeof(Hotcake) === "undefined")
 		        catch (exception)
 		        { }
 		    }
+		}
+
+		guid_p8 = function (s)
+		{
+		    var p = (Math.random().toString(16) + "000000000").substr(2, 8);
+		    return s ? "-" + p.substr(0, 4) + "-" + p.substr(4, 4) : p;
+		};
+
+		generateGUID = function ()
+		{
+		    return guid_p8() + guid_p8(true) + guid_p8(true) + guid_p8();
 		}
 
 	    // What follows is not required for Hotcake to function.
