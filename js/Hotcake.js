@@ -7,12 +7,12 @@ if(typeof(Hotcake) === "undefined")
 	    var copyKeys, delegateKeys, delegateKeysSkip, isRelativeScript, pushScriptHotload, evaluateHotload, resumeJQueryReady, suspendJQueryReady, hotloadScript;
 	    var hotswapStyles, hotswapStyle;
 	    var readyFunction;
-	    var loadedScripts, respondedScripts, totalScripts;
+	    var loadScripts, respondedScripts, totalScripts;
 	    var onswapped, hotswapping;
 	    var handlebarsCache;
 
 	    Hotcake = new Object();
-	    loadedScripts = new Array();
+	    loadScripts = new Array();
 	    var handlebarsCache = new Object();
 
 		copyKeys = function(to, from)
@@ -197,7 +197,6 @@ if(typeof(Hotcake) === "undefined")
 		Hotcake.hotswap = function (options)
 		{
 		    var scripts, script, src;
-		    var toLoad;
 
 		    if (hotswapping)
 		    {
@@ -222,7 +221,7 @@ if(typeof(Hotcake) === "undefined")
 		        options.filterArray = new Array();
 
 		    // reset total number of requested scripts.
-		    toLoad = new Array();
+		    loadScripts.splice(0);
 
 		    for (var i = 0; i < scripts.length; i++)
 		    {
@@ -230,20 +229,19 @@ if(typeof(Hotcake) === "undefined")
 		        src = script.attributes["src"];
 
 		        if (src && src.value && (options.loadForeign || (options.loadForeign || isRelativeScript(src.value))) && !isIgnoredScript(options.filterArray, src.value))
-		            toLoad.push(src.value);
+		            loadScripts.push({name: src.value});
 		    }
 
             // deal with any includes
 		    if (options.include && options.include.length && options.include.length > 0)
 		        for (var i = 0; i < options.include.length; i++)
-		            toLoad.push(options.include[i]);
+		            loadScripts.push({name: options.include[i]});
 
-		    totalScripts = toLoad.length;
-		    loadedScripts.splice(0);
+		    totalScripts = loadScripts.length;
 		    respondedScripts = 0;
 
-		    for(var i = 0; i < toLoad.length; i++)
-		        hotloadScript(toLoad[i], options.async);
+		    for(var i = 0; i < loadScripts.length; i++)
+		        hotloadScript(loadScripts[i], options.async);
 
 		    // load any stylesheets.
 		    if (options.loadStyles)
@@ -289,10 +287,13 @@ if(typeof(Hotcake) === "undefined")
 	    /**
 			Forms and sends an XMLHTTPRequest which pulls the given [url], then evaluates it as a script file.
 		*/
-		hotloadScript = function (url, async)
+		hotloadScript = function (loadScript, async)
 		{
 		    var request;
-            
+		    var url;
+
+		    url = loadScript.name;
+
 		    if (url.indexOf("?") > 0)
 		        url += "&";
 		    else
@@ -301,7 +302,10 @@ if(typeof(Hotcake) === "undefined")
 		    url += "__hotcakeGUID=" + generateGUID();
 
 		    request = new XMLHttpRequest();
-		    request.onload = pushScriptHotload;
+		    request.onload = function(response)
+		    {
+		        pushScriptHotload(response, loadScript);
+		    };
 		    request.open("GET", url, async);
 
 		    // try to send the request. If it errors or fails, do not interrupt our execution.
@@ -319,12 +323,12 @@ if(typeof(Hotcake) === "undefined")
 	    /**
             When a script has been returned as part of an ajax response, this is called.
         */
-		pushScriptHotload = function (response)
+		pushScriptHotload = function (response, loadScript)
 		{
 		    respondedScripts++;
 
 		    if (response.target.responseText)
-		        loadedScripts.push(response.target.responseText);
+		        loadScript.body = response.target.responseText;
 
 		    if (respondedScripts == totalScripts)
 		        evaluateHotload();
@@ -335,11 +339,11 @@ if(typeof(Hotcake) === "undefined")
         */
 		evaluateHotload = function()
 		{
-		    for (var i = 0; i < loadedScripts.length; i++)
+		    for (var i = 0; i < loadScripts.length; i++)
 		        try
 		        {
 		            suspendJQueryReady();
-		            eval.call(window, loadedScripts[i]);
+		            eval.call(window, loadScripts[i].body);
 		        }
                 catch (exception)
 		        {
@@ -362,7 +366,7 @@ if(typeof(Hotcake) === "undefined")
         */
 		suspendJQueryReady = function()
 		{
-		    if ($ && $.prototype.ready !== noop)
+		    if (typeof($) !== "undefined" && $.prototype.ready !== noop)
 		    {
 		        readyFunction = $.prototype.ready;
 		        $.prototype.ready = $.ready = noop;
@@ -371,7 +375,7 @@ if(typeof(Hotcake) === "undefined")
 
 		resumeJQueryReady = function()
 		{
-            if($)
+		    if (typeof ($) !== "undefined")
 			    $.prototype.ready = $.ready = readyFunction;
 		};
 
