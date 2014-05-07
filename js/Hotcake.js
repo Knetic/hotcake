@@ -362,7 +362,7 @@ if(typeof(Hotcake) === "undefined")
         */
 		suspendJQueryReady = function()
 		{
-		    if ($.prototype.ready !== noop)
+		    if ($ && $.prototype.ready !== noop)
 		    {
 		        readyFunction = $.prototype.ready;
 		        $.prototype.ready = $.ready = noop;
@@ -371,7 +371,8 @@ if(typeof(Hotcake) === "undefined")
 
 		resumeJQueryReady = function()
 		{
-			$.prototype.ready = $.ready = readyFunction;
+            if($)
+			    $.prototype.ready = $.ready = readyFunction;
 		};
 
 	    /**
