@@ -116,6 +116,72 @@ $(document).ready(function()
         ok(Hotcake._private.isIgnoredScript(filterArray, "/js/someFile.js"), "Filters correctly picks up scripts who are in subfolders marked as filtered.");
     });
 
+    test("delegateKeysReplace", function ()
+    {
+        var classes, testFunctions;
+        var isPassing;
+
+        testFunctions = new Array();
+        
+        // multiple replacement keys
+        classes = newClassPair();
+        for (var i = 0; i < 10; i++)
+            testFunctions[i] = classes[1]["test" + i] = function () { };
+
+        Hotcake._private.copyKeys(classes[0], classes[1]);
+        Hotcake._private.delegateKeysReplace(classes[0], classes[1]);
+        isPassing = true;
+
+        for (var i = 0; i < testFunctions.length; i++)
+            if (!(classes[0]["test" + i] && classes[0]["test" + i]._hotcakeReplacement))
+                isPassing = false;
+
+        ok(isPassing, "Multiple replacement keys are given delegates");
+
+        for (var i = 0; i < testFunctions.length; i++)
+            if (classes[0]["test" + i]._hotcakeReplacement !== testFunctions[i])
+                isPassing = false;
+
+        ok(isPassing, "Multiple replacement keys are given delegates that match the right source functions");
+
+        // multiple replacement of null keys
+        classes = newClassPair();
+        for (var i = 0; i < 10; i++)
+            testFunctions[i] = classes[1]["test" + i] = function () { };
+
+        Hotcake._private.delegateKeysReplace(classes[0], classes[1]);
+        isPassing = true;
+
+        for (var i = 0; i < testFunctions.length; i++)
+            if (classes[0]["test" + i])
+                isPassing = false;
+
+        ok(isPassing, "Multiple replacement doesn't copy keys, it only should delegate them");
+    });
+
+    test("delegateForwardFunction", function ()
+    {
+        var classes;
+        var testFunction, testFunction2;
+
+        testFunction = function() { return 1; };
+        testFunction2 = function() { return 2; };
+
+        classes = newClassPair();
+        classes[0].prototype.test = Hotcake._private.delegateForwardFunction.call(classes[0], "test", testFunction);
+        
+        equal(classes[2].test(), 1, "Delegating forward function still executes original function");
+
+        classes[0].prototype.test._hotcakeReplacement = testFunction2;
+
+        equal(classes[2].test(), 2, "Delegated forward function correctly replaces itself with new function, immediately");
+    });
+
+    /*test("delegateKeys", function ()
+    {
+
+    });*/
+
     // this one is so big that it almost deserves its own test suite.
     // for our purposes, only check the "special" characters, which mean something specific to regex.
     // 
