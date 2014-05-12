@@ -35,8 +35,12 @@ $(document).ready(function ()
         deepEqual(testInstance.returnValue(), 0, "Test instance has its immediate superclass members");
         deepEqual(testInstance.incrementReturn(), 1, "Test instance inherits all parent members");
 
-        Hotcake.hotswap({ async: false, include: ["tests/acceptanceTest_3.js"] });
+        deepEqual(typeof (new SimpleSuperclass()._baseClass), "undefined", "Instance of class with no superclass doesn't have 'baseClass' defined");
+        ok(testInstance._baseClass, "Instance of subclass contains a base class");
+        deepEqual(testInstance._baseClass, SimpleSubclass, "Instance of subclass's base class is set to immediate superclass");
 
+        Hotcake.hotswap({ async: false, include: ["tests/acceptanceTest_3.js"] });
+        
         deepEqual(testInstance.returnNothing(), -999, "Test instance has its own members replaced");
         deepEqual(testInstance.returnValue(), -1, "Test instance had subclass member replaced");
         deepEqual(testInstance.incrementReturn(), 11, "Test instance had superclass member replaced");
@@ -58,6 +62,14 @@ $(document).ready(function ()
         deepEqual(testInstance.returnNothing(), null, "Test instance has its own members");
         deepEqual(testInstance.returnValue(), 0, "Test instance has its immediate superclass members");
         deepEqual(testInstance.incrementReturn(), 1, "Test instance inherits all parent members");
+
+        notEqual(SimpleBackboneSuperclass, SimpleBackboneSubclass, "Subclasses of a class are not identical to their base class");
+        notEqual(SimpleBackboneSubclass, SimpleBackboneSubclass2, "Subclasses of a class are not identical to their base class");
+
+        ok(SimpleBackboneSubclass2.__super__, "Backbone subclass has a backbone superclass listed");
+        deepEqual(SimpleBackboneSuperclass.__super__, Backbone.Model.prototype, "Backbone subclass's superclass is listed as the correct class");
+        deepEqual(SimpleBackboneSubclass2.__super__, SimpleBackboneSubclass.prototype, "Backbone subclass's superclass is listed as the correct class");
+        deepEqual(SimpleBackboneSubclass.__super__, SimpleBackboneSuperclass.prototype, "Backbone subclass's superclass is listed as the correct class");
 
         Hotcake.hotswap({ async: false, include: ["tests/acceptanceTest_4.js"] });
 
