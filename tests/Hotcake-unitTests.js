@@ -95,25 +95,25 @@ $(document).ready(function()
 
     test("isIgnoredScript", function ()
     {
-        var filterArray;
+        var filter;
 
-        filterArray = ["filtered.js"];
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "abc.js"), "Doesn't pick up unrelated scripts");
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "unfiltered.js"), "Only checks from beginning of name. Substrings don't trip it");
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "js/filtered.js"), "Doesn't pick up scripts whose name matches, but are within a subfolder");
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "filtered.css"), "Doesn't pick up files with different extensions");
-        ok(Hotcake._private.isIgnoredScript(filterArray, "filtered.js"), "Correctly picks up a single matching filename");
+        filter = ["filtered.js"];
+        ok(!Hotcake._private.isIgnoredScript(filter, "abc.js"), "Doesn't pick up unrelated scripts");
+        ok(!Hotcake._private.isIgnoredScript(filter, "unfiltered.js"), "Only checks from beginning of name. Substrings don't trip it");
+        ok(!Hotcake._private.isIgnoredScript(filter, "js/filtered.js"), "Doesn't pick up scripts whose name matches, but are within a subfolder");
+        ok(!Hotcake._private.isIgnoredScript(filter, "filtered.css"), "Doesn't pick up files with different extensions");
+        ok(Hotcake._private.isIgnoredScript(filter, "filtered.js"), "Correctly picks up a single matching filename");
 
-        filterArray = ["filtered.js", "anotherFilter.js", "moreFilter", "/js/"];
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "abc.js"), "Multiple filters don't pick up unrelated scripts");
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "unfiltered.js"), "Multiple filters only checks from beginning of name. Substrings don't trip it");
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "js/filtered.js"), "Multiple filters don't pick up scripts whose name matches, but are within a subfolder");
-        ok(!Hotcake._private.isIgnoredScript(filterArray, "filtered.css"), "Multiple filters don't pick up files with different extensions");
-        ok(Hotcake._private.isIgnoredScript(filterArray, "filtered.js"), "Multiple filters correctly picks up a single matching filename");
-        ok(Hotcake._private.isIgnoredScript(filterArray, "moreFilter.js"), "Multiple filters correctly picks up a single matching filename that isn't the first index");
-        ok(Hotcake._private.isIgnoredScript(filterArray, "anotherFilter.js"), "Multiple filters correctly picks up a single matching filename that isn't the first index");
+        filter = ["filtered.js", "anotherFilter.js", "moreFilter", "/js/"];
+        ok(!Hotcake._private.isIgnoredScript(filter, "abc.js"), "Multiple filters don't pick up unrelated scripts");
+        ok(!Hotcake._private.isIgnoredScript(filter, "unfiltered.js"), "Multiple filters only checks from beginning of name. Substrings don't trip it");
+        ok(!Hotcake._private.isIgnoredScript(filter, "js/filtered.js"), "Multiple filters don't pick up scripts whose name matches, but are within a subfolder");
+        ok(!Hotcake._private.isIgnoredScript(filter, "filtered.css"), "Multiple filters don't pick up files with different extensions");
+        ok(Hotcake._private.isIgnoredScript(filter, "filtered.js"), "Multiple filters correctly picks up a single matching filename");
+        ok(Hotcake._private.isIgnoredScript(filter, "moreFilter.js"), "Multiple filters correctly picks up a single matching filename that isn't the first index");
+        ok(Hotcake._private.isIgnoredScript(filter, "anotherFilter.js"), "Multiple filters correctly picks up a single matching filename that isn't the first index");
 
-        ok(Hotcake._private.isIgnoredScript(filterArray, "/js/someFile.js"), "Filters correctly picks up scripts who are in subfolders marked as filtered.");
+        ok(Hotcake._private.isIgnoredScript(filter, "/js/someFile.js"), "Filters correctly picks up scripts who are in subfolders marked as filtered.");
     });
 
     test("delegateKeysReplace", function ()

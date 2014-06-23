@@ -35,7 +35,7 @@ if(typeof(Hotcake) === "undefined")
 			    Searches for any scripts defined on the head of the page, whose source paths are relative.
 			    Requests and reloads each of those scripts.
 
-			    If "filterArray" is specified as an Array, any script whose name matches a value inside that array will not be hotloaded.
+			    If "filter" is specified as an Array, any script whose name matches a value inside that array will not be hotloaded.
 			    If "loadForeign" is truthy, then non-relative scripts will be loaded. Generally, non-relative scripts are things like CloudFlare-hosted libraries that you
 							    don't want to load anyway.
 			    If "include" is specified as an Array, this will also attempt to load all scripts named inside the array.
@@ -63,10 +63,10 @@ if(typeof(Hotcake) === "undefined")
                 if (typeof (options.loadStyles) === "undefined")
                     options.loadStyles = true;
 
-                // If [filterArray] is specified, any scripts matching the names given in [filterArray] will NOT be hotloaded.
+                // If [filter] is specified, any scripts matching the names given in [filter] will NOT be hotloaded.
                 // This is useful to prevent repeat requests of library files with include guards, like jQuery or MooTools.
-                if (!options.filterArray)
-                    options.filterArray = new Array();
+                if (!options.filter)
+                    options.filter = new Array();
 
                 // reset total number of requested scripts.
                 loadScripts.splice(0);
@@ -76,7 +76,7 @@ if(typeof(Hotcake) === "undefined")
                     script = scripts[i];
                     src = script.attributes["src"];
 
-                    if (src && src.value && (options.loadForeign || (options.loadForeign || _private.isRelativeScript(src.value))) && !_private.isIgnoredScript(options.filterArray, src.value))
+                    if (src && src.value && (options.loadForeign || (options.loadForeign || _private.isRelativeScript(src.value))) && !_private.isIgnoredScript(options.filter, src.value))
                         loadScripts.push({ name: src.value });
                 }
 
@@ -368,13 +368,13 @@ if(typeof(Hotcake) === "undefined")
             return String(target).replace(/([-()\[\]{}+?*.$\^|,:#<!\\])/g, '\\$1').replace(/\x08/g, '\\x08');
         }
 
-        _private.isIgnoredScript = function (filterArray, name)
+        _private.isIgnoredScript = function (filter, name)
         {
             var regex;
 
-            for (var i = 0; i < filterArray.length; i++)
+            for (var i = 0; i < filter.length; i++)
             {
-                regex = new RegExp("^" + _private.escapeRegex(filterArray[i]), "i");
+                regex = new RegExp("^" + _private.escapeRegex(filter[i]), "i");
                 if (regex.test(name))
                     return true;
             }
