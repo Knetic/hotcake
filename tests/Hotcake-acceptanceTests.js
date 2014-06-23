@@ -35,9 +35,9 @@ $(document).ready(function ()
         deepEqual(testInstance.returnValue(), 0, "Test instance has its immediate superclass members");
         deepEqual(testInstance.incrementReturn(), 1, "Test instance inherits all parent members");
 
-        deepEqual(typeof (new SimpleSuperclass()._baseClass), "undefined", "Instance of class with no superclass doesn't have 'baseClass' defined");
-        ok(testInstance._baseClass, "Instance of subclass contains a base class");
-        deepEqual(testInstance._baseClass, SimpleSubclass, "Instance of subclass's base class is set to immediate superclass");
+        deepEqual(typeof (new SimpleSuperclass()._class._baseClass), "undefined", "Instance of class with no superclass doesn't have 'baseClass' defined");
+        ok(testInstance._class._baseClass, "Instance of subclass contains a base class");
+        deepEqual(testInstance._class._baseClass, SimpleSubclass, "Instance of subclass's base class is set to immediate superclass");
 
         Hotcake.hotswap({ async: false, include: ["tests/acceptanceTest_3.js"] });
         

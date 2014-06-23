@@ -211,7 +211,7 @@ if(typeof(Hotcake) === "undefined")
                 if (base)
                 {
                     _private.copyKeys(self.prototype, base);
-                    self.prototype._baseClass = base;
+                    self._baseClass = base;
                 }
 
                 if (members)
@@ -221,6 +221,8 @@ if(typeof(Hotcake) === "undefined")
 
             HotcakeSurrogate = function ()
             {
+                this._class = HotcakeSurrogate;
+
                 if (this.ctor && typeof (this.ctor) === "function")
                     this.ctor.apply(this, arguments);
                 else
@@ -231,7 +233,7 @@ if(typeof(Hotcake) === "undefined")
             if (base)
             {
                 _private.copyKeys(HotcakeSurrogate.prototype, base.prototype);
-                HotcakeSurrogate.prototype._baseClass = base;
+                HotcakeSurrogate._baseClass = base;
             }
 
             if (members)
@@ -245,6 +247,8 @@ if(typeof(Hotcake) === "undefined")
 
             HotcakeSurrogate = function ()
             {
+            	this._class = HotcakeSurrogate;
+
                 if (typeof (members) === "function")
                 {
                     this.constructor = members.constructor;
@@ -261,7 +265,7 @@ if(typeof(Hotcake) === "undefined")
             if (base)
             {
                 _private.copyKeys(HotcakeSurrogate.prototype, base.prototype);
-                HotcakeSurrogate.prototype._baseClass = base;
+                HotcakeSurrogate._baseClass = base;
             }
 
             if (members)
