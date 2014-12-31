@@ -31,3 +31,7 @@ The full explanation of how Hotcake came about, and how it works, can be found o
 ###Can I contribute?
 
 I'm down to accept pull requests, if they're in the spirit of the project. If you have ideas, concerns, or comments about the project - email me. Seriously, do it. I don't mind emails from out of the blue.
+
+###Activity
+
+If this repository hasn't been updated in a while, it's probably because I don't have any outstanding issues to work on - it's not because I've abandoned the project. If you have questions, issues, or patches; I'm completely open to pull requests, issues opened on github, or emails from out of the blue.
