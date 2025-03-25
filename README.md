@@ -1,5 +1,7 @@
 # Hotswapping for browsers: sweet, fluffy, and lightweight
 
+# **ARCHIVED** - see [ARCHIVED.md](./ARCHIVED.md) for details.
+
 ### What is it?
 
 Hotcake (www.hotcakejs.com) is a library which allows you to hotload and hotswap your code and stylesheets on-demand, within a browser.
